@@ -3,13 +3,13 @@ TARGET			= main
 
 #SOURCE			= startup.c memcpy.c 
 #SOURCE			= startup.c test_I2C.c I2C.c
-SOURCE			= startup.c test_SysTick.c GPIO.c SysTick.c 
+#SOURCE			= startup.c test_SysTick.c SysTick.c 
 #SOURCE			= startup.c test_lcd.c SysTick.c I2C.c lcd.c
-#SOURCE			= startup.c test_SYSPLL.c UART.c SysTick.c lcd.c I2C.c GPIO.c SYSPLL.c
-#SOURCE			= startup.c IR.c GPIO.c UART.c SysTick.c 
-#SOURCE			= startup.c test_Stepper.c UART.c SysTick.c lcd.c I2C.c GPIO.c
-#SOURCE			= startup.c test_UART_TX.c UART.c SysTick.c GPIO.c I2C.c
-#SOURCE			= startup.c main.c lcd.c SysTick.c I2C.c GPIO.c
+#SOURCE			= startup.c test_SYSPLL.c UART.c SysTick.c lcd.c I2C.c SYSPLL.c
+#SOURCE			= startup.c IR.c  UART.c SysTick.c 
+#SOURCE			= startup.c test_Stepper.c UART.c SysTick.c lcd.c I2C.c 
+SOURCE			= startup.c test_UART_TX.c UART.c SysTick.c  I2C.c
+#SOURCE			= startup.c main.c lcd.c SysTick.c I2C.c 
 
 # Processor/Microcontroller family
 MCU				= cortex-m0
@@ -26,12 +26,12 @@ ECHO			= echo
 # C Compiler Optons
 CFLAGS=-mthumb # 	           		  Using the Thumb Instruction Set
 CFLAGS+= -mcpu=$(MCU) #			      The MCU Family
-CFLAGS+= -Os # 						  Compile with Size Optimizations
-CFLAGS+= -ggdb #					  Generate debugging info
-#CFLAGS+= -v #						  Generate verbose output
+CFLAGS+= -O2 # 						  Compile with Size Optimizations
+#CFLAGS+= -ggdb #					  Generate debugging info
+#CFLAGS+= -x c++ #						  Generate verbose output
 CFLAGS+= -ffunction-sections # 		  Create a separate function section
 CFLAGS+= -fdata-sections # 			  Create a separate data section
-CFLAGS+= -std=c99 # 				  Comply with C99
+#CFLAGS+= -std=c99 # 				  Comply with C99
 CFLAGS+= -Wall # 					  Enable All Warnings 
 CFLAGS+= -fno-common #				  Disable COMMON sections
 CFLAGS+= -fno-builtin #
@@ -42,16 +42,18 @@ CFLAGS+= -Wa,-adhlns=$(<:%.c=%.lst) # Generate assembly files
 # Linker Options
 LDFLAGS=-Wl,--gc-sections # 			Linker to ignore sections that aren't used.
 LDFLAGS+= -Wl,-Map,$(TARGET).map #		Generate memory map file
-LDFLAGS+= -Wl,-T,".\$(TARGET).ld" # 	Path to Linker Script
-LDFLAGS+= -Wl,--build-id=none #			Do NOT require a .note.gnu.build-id section (as of GCC 4.9)
-LDFLAGS+= -nostdlib
-# LDFLAGS+= -nostartfiles
-
+LDFLAGS+= -Wl,-T,"$(TARGET).ld" # 	Path to Linker Script
+#LDFLAGS+= -Wl,--build-id=none #			Do NOT require a .note.gnu.build-id section (as of GCC 4.9)
+#LDFLAGS+= -nostdlib
+LDFLAGS+= -nostartfiles
+LDFLAGS+= -g
+LDFLAGS+= -mcpu=cortex-m0 
+LDFLAGS+= -mthumb 
 # Define object and assembly list files
 OBJ = $(SOURCE:%.c=%.o)
 LST = $(SOURCE:%.c=%.lst)
 
-.PHONY: all clean hex disasm program
+.PHONY: all clean bin disasm program
 
 all: $(TARGET).elf
 
@@ -64,12 +66,12 @@ $(TARGET).elf: $(OBJ)
 	
 clean:
 	$(RM) $(OBJ)
-	$(RM) $(TARGET).hex $(TARGET).elf $(TARGET).map $(TARGET).lss $(LST)
+	$(RM) $(TARGET).bin $(TARGET).hex $(TARGET).elf $(TARGET).map $(TARGET).lss $(LST)
 	
-hex: $(TARGET).hex
+bin: $(TARGET).bin
 
-$(TARGET).hex: $(TARGET).elf
-	$(OBJCOPY) -O ihex $< $@
+$(TARGET).bin: $(TARGET).elf
+	$(OBJCOPY) -O binary $< $@
 
 disasm: $(TARGET).lss
 
@@ -77,7 +79,8 @@ $(TARGET).lss: $(TARGET).elf
 	$(OBJDUMP) -h -S $< > $@
 
 program: $(TARGET).elf
-	$(PGM) -f interface/stlink-v1.cfg -f lpc1114.cfg -c "program $(TARGET).elf verify reset"
+	lpc21isp -control -bin main.bin /dev/ttyUSB0 115200 14746
+#	$(PGM) -f interface/stlink-v1.cfg -f lpc1114.cfg -c "program $(TARGET).elf verify reset"
 
 
 

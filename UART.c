@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "LPC1114.h"
 #include "UART.h"
-#include "GPIO.h"
+
 
 void (*UART_callback)(uint8_t);
 
@@ -27,14 +27,21 @@ void UART_init(void) {
 	
 	// Set baud rate to 115200 kb/s @ UART_CLK of 48Mhz  (DLM = 0, DLL = 17, DIVADDVAL = 8, and MULVAL = 15)
 	// UART_DLM = 0x00;		// Default
-	UART_DLL = 0x11;		
-	UART_FDR = 0xF8;		// FDR = (MULVAL << 4 ) | DIVADDVAL
+	//UART_DLL = 0x11;		
+	//UART_FDR = 0xF8;		// FDR = (MULVAL << 4 ) | DIVADDVAL
 	
 	// Turn off DLAB
 	UART_LCR ^= (1 << UART_LCR_DLAB_BIT);
 	
 	// Enable UART_PCKL devider to supply clock to the baud generator
 	UARTCLKDIV = 0x01;
+	
+	//Autodetect baud rate 	
+	UART_ACR |= 0x01;
+	if (UART_ACR & 0x01)
+	{
+		while(UART_ACR & 0x01);
+	}		
 	
 	// Enable UART Interrupt (NVIC_SETENA is a set only register. No need for a RMW operation)
 	NVIC_SETENA = (1 << NVIC_UART_BIT);

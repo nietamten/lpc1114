@@ -1,22 +1,25 @@
-#include "LPC1114.h"
+//#include "LPC1114.h"
 #include "SysTick.h"
-#include "GPIO.h"
+#include "startup.h"
+#include "stdint.h"
+#include "inc/LPC11xx.h"
 
 volatile uint32_t flag;
 
 void GPIO_callback(uint32_t);
 void main_callback(uint32_t);
 
-Timer_t gpio_timer1 = {2000, 0, 0, 0, GPIO_callback};
-Timer_t gpio_timer2 = {1000, 0, 0, 0, GPIO_callback};
-Timer_t main_timer = {16000, 0, 0, 0, main_callback};
+Timer_t gpio_timer1 = {1000, 0, 0, 0, GPIO_callback};
+//Timer_t gpio_timer2 = {1000, 0, 0, 0, GPIO_callback};
+//Timer_t main_timer = {1000, 0, 0, 0, main_callback};
 
 void GPIO_callback(uint32_t state) {
 
 	// Toggle GPIO LED
-	GPIO1DATA ^= (1 << PIO1_9);							
+//	GPIO2DATA ^= (1 << PIO2_6);	
+    LPC_GPIO2->DATA ^= 1<<6;						
 }
-
+/*
 void main_callback(uint32_t state) {
 
 	if (flag == 1) {
@@ -30,21 +33,25 @@ void main_callback(uint32_t state) {
 		SysTick_add(&gpio_timer1);
 		flag = 1;
 	}
-}
+}*/
 
-void main() {
+int main() {
 
-	// Initialize SysTick, GPIO and UART
-	GPIO_init();
+	pll_start(48955000, 48955000);			// start the PLL
+	system_init();							// initialize other necessary elements
+
+    LPC_GPIO2->DIR |= 1<<6;    
+    LPC_GPIO2->DATA |= 1<<6;    
+    
 	SysTick_init();
-	
 	flag = 1;
 
 	SysTick_add(&gpio_timer1);
-	SysTick_add(&main_timer);
+	//SysTick_add(&main_timer);
 	
 	// Despatch timer callbacks if available; or just wait
 	SysTick_run();
-	
+
+        return 0;	
 }
 

@@ -1,5 +1,9 @@
 #include <stdint.h>
+
+#include <stdint.h>
+
 #include "LPC1114.h"
+
 
 // Sections as defined in the linker script
 extern uint32_t __data_load; 
@@ -12,17 +16,19 @@ extern uint32_t __ram_end;
 // Application entry point main() declaration
 int main(void);
 
-// Default Handler
-void Default_Handler(void) {
-	while(1);
+static void __Default_Handler(void) __attribute__ ((interrupt));
+static void __Default_Handler(void)
+{
+    while (1);
 }
+
 
 // Interrupt/Exception Handlers
 void Reset_Handler(void);
-void SysTick_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void I2C_Handler(void) __attribute__ ((weak, alias("Default_Handler")));
-void UART_Handler(void) __attribute__ ((weak, alias("Default_Handler")));
-void GPIO1_Handler(void) __attribute__ ((weak, alias("Default_Handler")));
+void SysTick_Handler(void) __attribute__((interrupt, weak, alias("__Default_Handler")));
+void I2C_Handler(void) __attribute__ ((weak, alias("__Default_Handler")));
+void UART_Handler(void) __attribute__ ((weak, alias("__Default_Handler")));
+void GPIO1_Handler(void) __attribute__ ((weak, alias("__Default_Handler")));
 
 // Interrupt Vector at address 0x00000000
 void (* __vectors[]) (void) __attribute__ ((section(".vectors"))) = {
@@ -76,23 +82,6 @@ void (* __vectors[]) (void) __attribute__ ((section(".vectors"))) = {
 	0					// IRQ31
 };
 
-void SysPLL_init(void) {
-	
-	// Set Post and Feedback dividers (Input=12Mhz, Output=48Mhz, M=4, MSEL,M-1=3 , P=2)
-	SYSPLLCTRL = (0x03 << SYSPLLCTRL_MDIV_BIT) | (SYSPLLCTRL_PDIV_02 << SYSPLLCTRL_PDIV_BIT);
-	
-	// Power-up PLL block
-	PDCONFIG =  (PDCONFIG_SYSPLL_ON << PDCONFIG_SYSPLL_BIT) | (PDCONFIG & ~(1 << PDCONFIG_SYSPLL_BIT));
-	
-	// Wait for PLL lock 
-	while(SYSPLLSTAT != SYSPLLSTAT_LOCKED);
-	
-	// Select PLL as main clock source
-	MAINCLKSEL = MAINCLKSEL_PLLOUT;
-	MAINCLKUEN = MAINCLKUEN_OFF;
-	MAINCLKUEN = MAINCLKUEN_ON;
-	
-}
 
 void Reset_Handler(void) {
 
@@ -111,17 +100,61 @@ void Reset_Handler(void) {
 		*dst++ = 0;
 	}
 	
-	// Initialize System PLL to 48Mhz
-	SysPLL_init();
-	
 	// Call main()
 	main();
 	
 	// Infinite loop
 	while(1);
+
 }
 
 
+
+
+void pll_start(uint8_t rc)
+{
+	if (rc)
+	{
+		SYSPLLCTRL = 0x01|0x02<<6;
+		
+		// Power-up PLL block
+		PDCONFIG =  (PDCONFIG_SYSPLL_ON << PDCONFIG_SYSPLL_BIT) | (PDCONFIG & ~(1 << PDCONFIG_SYSPLL_BIT));
+		
+		// Wait for PLL lock 
+		while(SYSPLLSTAT != SYSPLLSTAT_LOCKED);
+		
+		// Select PLL as main clock source
+		MAINCLKSEL = MAINCLKSEL_PLLOUT;
+		MAINCLKUEN = MAINCLKUEN_OFF;
+		MAINCLKUEN = MAINCLKUEN_ON;
+	}
+	else
+	{
+		
+		SYSOSCCTRL = 0;			// "lower speed" crystals
+		PDCONFIG &= ~(1<<5);	// power-up main oscillator 
+		SYSPLLCLKSEL = 1;	// select main oscillator as the input clock for PLL
+	
+		MAINCLKUEN = MAINCLKUEN_OFF;
+		MAINCLKUEN = MAINCLKUEN_ON;
+
+		SYSPLLCTRL = 0x01|0x02<<6;
+
+		PDCONFIG &= ~(1<<7); // power-up PLL 
+
+		while(SYSPLLSTAT != SYSPLLSTAT_LOCKED);	
+		
+		// Select PLL as main clock source
+		MAINCLKSEL = MAINCLKSEL_PLLOUT;
+		MAINCLKUEN = MAINCLKUEN_OFF;
+		MAINCLKUEN = MAINCLKUEN_ON;
+		
+		SYSAHBCLKDIV = 1;			
+
+		SYSAHBCLKCTRL |= 1 << SYSAHBCLKCTRL_IOCON_BIT;	// enable clock for IO configuration block
+	
+	}
+}
 
 
 

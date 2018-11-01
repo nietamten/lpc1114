@@ -2,51 +2,57 @@
 #define LPC1114_H
 
 // Memory Mapped Peripheral Control Registers must be accessed as volatile to avoid compiler optimization
-#define  MMIO(addr) 					(*(volatile int*) addr)
+
+#define CAAD(addr) (*(volatile int*) addr)
 
 // Peripheral RESET Register SCB) Registers
-#define PRESETCTRL						MMIO(0x40048004)
+#define PRESETCTRL						CAAD(0x40048004)
 #define PRESETCTRL_I2C_BIT				1
 
 //  SYSCON Registers (SCB)
-#define SYSAHBCLKCTRL  					MMIO(0x40048080)		// System Advanced High-performance Bus Clock Control
+#define SYSAHBCLKCTRL  					CAAD(0x40048080)		// System Advanced High-performance Bus Clock Control
 #define SYSAHBCLKCTRL_IOCON_BIT 		16
 #define SYSAHBCLKCTRL_I2C_BIT 			5
 #define SYSAHBCLKCTRL_UART_BIT			12						// Gates system clock to UART
 
-#define UARTCLKDIV						MMIO(0x40048098)		// SYSCON UART Clock Devider Register (UART_CLK from MAIN_CLK)
+#define SYSAHBCLKDIV 						CAAD(0x40048078)
+
+#define UARTCLKDIV						CAAD(0x40048098)		// SYSCON UART Clock Devider Register (UART_CLK from MAIN_CLK)
 
 // IOCON - I2C 
-#define IOCON_PIO0_4					MMIO(0x40044030)
-#define IOCON_PIO0_5					MMIO(0x40044034)
+#define IOCON_PIO0_4					CAAD(0x40044030)
+#define IOCON_PIO0_5					CAAD(0x40044034)
 
 // IOCON - UART 
-#define IOCON_PIO1_6					MMIO(0x400440A4)		// RX pin
-#define IOCON_PIO1_7					MMIO(0x400440A8)		// TX pin
+#define IOCON_PIO1_6					CAAD(0x400440A4)		// RX pin
+#define IOCON_PIO1_7					CAAD(0x400440A8)		// TX pin
 
 // IOCON - GPIO0
-#define IOCON_PIO0_8   					MMIO(0x40044060)
+#define IOCON_PIO0_8   					CAAD(0x40044060)
 
 // IOCON - GPIO1
-#define IOCON_PIO1_8   					MMIO(0x40044014)
-#define IOCON_PIO1_9   					MMIO(0x40044038)
+#define IOCON_PIO1_8   					CAAD(0x40044014)
+#define IOCON_PIO1_9   					CAAD(0x40044038)
 
 // GPIO1 - Registers
-#define GPIO1DATA      					MMIO(0x50013FFC)
-#define GPIO1DIR      					MMIO(0x50018000)
+#define GPIO1DATA      					CAAD(0x50013FFC)
+#define GPIO1DIR      					CAAD(0x50018000)
+#define GPIO2DATA      					CAAD(0x50023FFC)
+#define GPIO2DIR      					CAAD(0x50028000)
 
-#define GPIO1_ISENSE					MMIO(0x50018004)
-#define GPIO1_IEDGES					MMIO(0x50018008)
-#define GPIO1_IEVENT					MMIO(0x5001800C)
-#define GPIO1_IENABLE					MMIO(0x50018010)
-#define GPIO1_IRAWSTAT					MMIO(0x50018014)
-#define GPIO1_IMASKSTAT					MMIO(0x50018018)
-#define GPIO1_ICLR						MMIO(0x5001801C)
+
+#define GPIO1_ISENSE					CAAD(0x50018004)
+#define GPIO1_IEDGES					CAAD(0x50018008)
+#define GPIO1_IEVENT					CAAD(0x5001800C)
+#define GPIO1_IENABLE					CAAD(0x50018010)
+#define GPIO1_IRAWSTAT					CAAD(0x50018014)
+#define GPIO1_IMASKSTAT					CAAD(0x50018018)
+#define GPIO1_ICLR						CAAD(0x5001801C)
 
 // SysTick Registers (WORD ADDR)
-#define SYSTICK_CSR						MMIO(0xE000E010) 
-#define SYSTICK_RVR						MMIO(0xE000E014) 
-#define SYSTICK_CVR						MMIO(0xE000E018) 
+#define SYSTICK_CSR						CAAD(0xE000E010) 
+#define SYSTICK_RVR						CAAD(0xE000E014) 
+#define SYSTICK_CVR						CAAD(0xE000E018) 
 
 // SYSTICK_CLKSOURCE : Use CPU (core)'s clock
 // SYSTICK_TICKINT 	 : SysTick interrupt is activated on NVIC
@@ -56,8 +62,8 @@
 #define SYSTICK_ENABLE_BIT 				0
 
 // NVIC Registers (WORD ADDR)
-#define NVIC_SETENA						MMIO(0xE000E100)
-#define NVIC_CLRENA						MMIO(0xE000E180)
+#define NVIC_SETENA						CAAD(0xE000E100)
+#define NVIC_CLRENA						CAAD(0xE000E180)
 
 // NVIC IRQs
 #define NVIC_I2C_BIT					15
@@ -65,12 +71,12 @@
 #define NVIC_GPIO1_BIT					30
 
 // I2C Peripheral REgisters
-#define I2C_CTRL_SET					MMIO(0x40000000)
-#define I2C_STATUS						MMIO(0x40000004)
-#define I2C_DATA						MMIO(0x40000008)
-#define I2C_CLK_H						MMIO(0x40000010)
-#define I2C_CLK_L						MMIO(0x40000014)
-#define I2C_CTRL_CLR					MMIO(0x40000018)
+#define I2C_CTRL_SET					CAAD(0x40000000)
+#define I2C_STATUS						CAAD(0x40000004)
+#define I2C_DATA						CAAD(0x40000008)
+#define I2C_CLK_H						CAAD(0x40000010)
+#define I2C_CLK_L						CAAD(0x40000014)
+#define I2C_CTRL_CLR					CAAD(0x40000018)
 
 #define I2C_CTRL_AA_BIT					2
 #define I2C_CTRL_SI_BIT					3
@@ -82,27 +88,27 @@
 /**********************    UART   *********************/
 
 // Standard UART 16550A Registers
-#define UART_RBR						MMIO(0x40008000)		// RX Buffer Register
-#define UART_THR						MMIO(0x40008000)		// TX Holding Register
-#define UART_DLL						MMIO(0x40008000)		// Divisor Latch LSB
-#define UART_DLM						MMIO(0x40008004)		// Divisor Latch MSB
-#define UART_IER						MMIO(0x40008004)		// Interrupt Enable Register
-#define UART_IIR						MMIO(0x40008008)		// Interrupt Identification Register
-#define UART_FCR						MMIO(0x40008008)		// FIFO Control Register
-#define UART_LCR						MMIO(0x4000800C)		// Line Control Register
-#define UART_MCR						MMIO(0x40008010)		// Modem Control Register
-#define UART_LSR						MMIO(0x40008014)		// Line Status Register
-#define UART_MSR						MMIO(0x40008018)		// Modem Status Register
-#define UART_SCR						MMIO(0x4000801C)		// Scratch Register (NOT of any particular use)
+#define UART_RBR						CAAD(0x40008000)		// RX Buffer Register
+#define UART_THR						CAAD(0x40008000)		// TX Hing Register
+#define UART_DLL						CAAD(0x40008000)		// Divisor Latch LSB
+#define UART_DLM						CAAD(0x40008004)		// Divisor Latch MSB
+#define UART_IER						CAAD(0x40008004)		// Interrupt Enable Register
+#define UART_IIR						CAAD(0x40008008)		// Interrupt Identification Register
+#define UART_FCR						CAAD(0x40008008)		// FIFO Control Register
+#define UART_LCR						CAAD(0x4000800C)		// Line Control Register
+#define UART_MCR						CAAD(0x40008010)		// Modem Control Register
+#define UART_LSR						CAAD(0x40008014)		// Line Status Register
+#define UART_MSR						CAAD(0x40008018)		// Modem Status Register
+#define UART_SCR						CAAD(0x4000801C)		// Scratch Register (NOT of any particular use)
 
 // LPC1114 Specific UART Registers
-#define UART_ACR						MMIO(0x40008020)		// Auto-Baud Control Register
-#define UART_FDR						MMIO(0x40008028)		// Fractional Devisor Register
-#define UART_TER						MMIO(0x40008030)		// TX Enable Register (Enabled by default)
+#define UART_ACR						CAAD(0x40008020)		// Auto-Baud Control Register
+#define UART_FDR						CAAD(0x40008028)		// Fractional Devisor Register
+#define UART_TER						CAAD(0x40008030)		// TX Enable Register (Enabled by default)
 
 // UART Interrupt Enable Register (IER) Bits
 #define UART_IER_RDA_BIT				0						// RX Data Available Interrupt
-#define UART_IER_THRE_BIT				1						// TX Holding Register Empty Interrupt
+#define UART_IER_THRE_BIT				1						// TX Hing Register Empty Interrupt
 #define UART_IER_LSR_BIT				2						// RX Line Status Register Interrupt (Overrun, Parity Error, Frame Error and Break detected)
 #define UART_IER_MSR_BIT				3						// Modem Status Register Interrupt
 #define UART_IER_CTS_BIT				7						// CTS Interrupt (only effective in AUTO_CTS mode)
@@ -118,9 +124,9 @@
 
 // UART Interrupt Identification Values
 #define UART_IIR_INTID_LSR				0x03					// All LSR events except RDA (RX Data Available)
-#define UART_IIR_INTID_RDA				0x02					// RX Data Available due to RX FIFO threshold
+#define UART_IIR_INTID_RDA				0x02					// RX Data Available due to RX FIFO thresh
 #define UART_IIR_INTID_CTO				0x06					// Character Time-out due to half-full RX FIFO
-#define UART_IIR_INTID_THRE				0x01					// TX Holding Register or TX FIFO is empty (with preconditions)
+#define UART_IIR_INTID_THRE				0x01					// TX Hing Register or TX FIFO is empty (with preconditions)
 #define UART_IIR_INTID_MSR				0x00					// State change on Modem Input pins (DCD, DSR and CTS)
 
 // UART FIFO Control Register (FCR) Bits
@@ -189,7 +195,7 @@
 
 /**********************      SYSPLL      *****************/
 
-#define SYSPLLCTRL						MMIO(0x40048008)
+#define SYSPLLCTRL						CAAD(0x40048008)
 #define SYSPLLCTRL_MDIV_BIT				0
 
 #define SYSPLLCTRL_PDIV_BIT 			5
@@ -199,27 +205,36 @@
 #define SYSPLLCTRL_PDIV_04				0x2
 #define SYSPLLCTRL_PDIV_08				0x3
 
-#define SYSPLLSTAT						MMIO(0x4004800C)
+#define SYSPLLSTAT						CAAD(0x4004800C)
 #define SYSPLLSTAT_LOCKED				0x1
 
-#define MAINCLKSEL						MMIO(0x40048070)
+#define MAINCLKSEL						CAAD(0x40048070)
 #define MAINCLKSEL_IRC					0x0
 #define MAINCLKSEL_PLLIN				0x1
 #define MAINCLKSEL_WDT					0x2
 #define MAINCLKSEL_PLLOUT				0x3
 
-#define MAINCLKUEN						MMIO(0x40048074)
+#define MAINCLKUEN						CAAD(0x40048074)
 #define MAINCLKUEN_OFF					0x0
 #define MAINCLKUEN_ON					0x1
 
-#define PDCONFIG 						MMIO(0x40048238)
+#define PDCONFIG 						CAAD(0x40048238)
 #define PDCONFIG_SYSPLL_BIT				7
 #define PDCONFIG_SYSPLL_ON				0x0
 #define PDCONFIG_SYSPLL_OFF				0x1
 
-#define SYSPLLCLKSEL					MMIO(0x40048040)
+#define SYSPLLCLKSEL					CAAD(0x40048040)
 #define SYSPLLCLKSEL_IRC				0x0
 #define SYSPLLCLKSEL_OSC				0x1
+
+#define SYSPLLCLKUEN				CAAD(0x40048044)
+
+#define SYSOSCCTRL					CAAD(0x40048020)
+
+#define FLASHCFG					CAAD(0x4003C010)
+
+#define TMR32B0TCR					CAAD(0x40014004)
+#define TMR32B0TC					CAAD(0x40014008)
 
 /**********************   End of SYSPLL  *****************/
 
