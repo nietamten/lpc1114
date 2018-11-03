@@ -28,7 +28,7 @@ CFLAGS=-mthumb # 	           		  Using the Thumb Instruction Set
 CFLAGS+= -mcpu=$(MCU) #			      The MCU Family
 CFLAGS+= -O2 # 						  Compile with Size Optimizations
 #CFLAGS+= -ggdb #					  Generate debugging info
-#CFLAGS+= -x c++ #						  Generate verbose output
+
 CFLAGS+= -ffunction-sections # 		  Create a separate function section
 CFLAGS+= -fdata-sections # 			  Create a separate data section
 #CFLAGS+= -std=c99 # 				  Comply with C99
@@ -36,6 +36,10 @@ CFLAGS+= -Wall # 					  Enable All Warnings
 CFLAGS+= -fno-common #				  Disable COMMON sections
 CFLAGS+= -fno-builtin #
 CFLAGS+= -Wa,-adhlns=$(<:%.c=%.lst) # Generate assembly files
+
+#CFLAGS+= -x c++ 
+#CFLAGS+= -I /usr/arm-none-eabi/include/c++/8.2.0/ -I /usr/arm-none-eabi/include/c++/8.2.0/arm-none-eabi/thumb/nofp/
+
 # CFLAGS+= -fdump-tree-all #          Dump GIMPLE/SSA passes
 # CFLAGS+= -fdump-rtl-all -da #       Dump RTL passes
 

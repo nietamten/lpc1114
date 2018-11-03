@@ -47,7 +47,7 @@ void UART_init(void) {
 	NVIC_SETENA = (1 << NVIC_UART_BIT);
 }
 
-void UART_write(uint8_t *byte, int count) {
+void UART_write(uint8_t *byte, uint8_t count) {
 		
 	for (int i = 0; i < count; i++) {
 	
@@ -78,6 +78,7 @@ uint8_t UART_read(void (*callback)(uint8_t)) {
 		// Enable UART RX Data Available (RDA) interrupt
 		UART_IER = (1 << UART_IER_RDA_BIT);
 	}
+	return 0;
 }
 
 void UART_Handler(void) {

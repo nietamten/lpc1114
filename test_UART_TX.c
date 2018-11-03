@@ -1,4 +1,3 @@
-
 #include "UART.h"
 #include <stdint.h>
 #include "LPC1114.h"
@@ -6,105 +5,308 @@
 #include "startup.h"
 #include "string.h"
 
-void dec(uint32_t n)
+#define FREQ 24000000
+
+struct ina
 {
-	uint8_t d;
+	uint8_t i2cAddr;
+	//send readed probe count every sec
+	uint8_t srpces; 
 	
-	if(n==0)
-	{
-		d='0';
-		UART_write(&d,1);
-	}
+	uint32_t probeCnr;
+	uint32_t probeCount;	
+	uint32_t probeDelay;
 	
-	uint8_t num[15];
-	memset(num,0,15);
-	uint8_t i = 0;
-	while(n != 0)
+	
+	//this are bitfields for correspogind ina registers where bits
+	// bit 0 - send coutinous probes, 
+	// bit 1:2 - 0 average value
+	//			 1 min
+	//			 2 max
+	//			 3 integral
+	// bit 3	delay in secs/msecs
+	// bit 4:7  delay value (0 - try send all probes)
+	uint8_t shuntVoltageCfg;
+	uint8_t busVoltageCfg;
+	uint8_t powerCfg;
+	uint8_t currentCfg;	
+	
+	//results
+	uint32_t shuntVoltage;
+	uint32_t busVoltage;
+	uint32_t power;
+	uint32_t current;
+	
+	//counters
+	uint32_t shuntVoltageCnr;
+	uint32_t busVoltageCnr;
+	uint32_t powerCnr;
+	uint32_t currentCnr;	
+	
+	//counters last probe time
+	uint32_t shuntVoltageCnrLp;
+	uint32_t busVoltageCnrLp;
+	uint32_t powerCnrLp;
+	uint32_t currentCnrLp;	
+};
+
+struct ina inas[1];
+
+//=== lpc fake addrs
+//1 i2cAddr
+//2 srpces
+//3 shuntVoltage;
+//4 busVoltage;
+//5 power;
+//6 current;
+//7 probe delay;
+
+volatile uint8_t command = 0;
+volatile uint8_t commandCount = 0;
+volatile uint32_t commandParam = 0;
+
+uint8_t lastReg = 254;
+
+uint16_t readReg(uint8_t reg)
+{
+	if(lastReg != reg)
 	{
-		num[i++]='0'+n%10;
-		n=n/10;
+		I2C_write(0x40,&reg,1);
+		lastReg = reg;
 	}
-	for(i=14;i<15;i--)
+	uint8_t data[] = {0,0};
+	I2C_read(0x40,data,2);
+	return *((uint16_t*)data);
+}
+
+void uartRead(uint8_t c)
+{
+	if(command == 0)
 	{
-		d=num[i];
-		if(d!=0)
-			UART_write(&d,1);	
+		if(c&0b10000000) //not ascii (they must be used for autobaud)
+		{
+			command = c;
+			commandParam = 0;
+			commandCount = 0;
+		}
 	}
-	d='\r';
-	UART_write(&d,1);
-	d='\n';
-	UART_write(&d,1);	
+	else
+	{
+		if (commandCount < 4)
+		{
+			commandParam |= c << (commandCount*8);
+		}		
+	}
+}
+
+void continousSend(uint8_t cfg,uint32_t *cnr, uint32_t *data)
+{
+	if (cfg&0b10000000)
+	{			
+		uint32_t delay = cfg&0b00001111;
+		delay *= FREQ;
+		if(cfg&0b00010000)
+			delay *= FREQ / 1000;
+
+		uint64_t counter = TMR32B0TC;
+		if(*cnr>counter)
+			counter += 4294967295-*cnr; //2^32-1, when timer overflow
+		uint64_t diff = counter - *cnr;
+		
+		if(diff>delay)
+		{
+			UART_write((uint8_t*)data,4);
+			*data = 0;
+			*cnr = TMR32B0TC;
+		}
+	}
+}
+
+void processCommand()
+{
+	if(command != 0)
+	{
+		uint8_t rw = ((command&0b00000100) == 0);
+		uint8_t addr = (command&0b00111000) >> 3;
+		uint8_t toLPC = ((command&0b01000000) == 0);
+		
+		if (rw)
+		{
+			if (commandCount >3)
+			{
+				if (toLPC)
+				{
+					if(addr==0)
+						inas[0].i2cAddr = commandParam;
+					if(addr==1)
+						inas[0].srpces = commandParam;	
+					if(addr==2)
+						inas[0].shuntVoltageCfg = commandParam;
+					if(addr==3)
+						inas[0].busVoltageCfg = commandParam;
+					if(addr==4)
+						inas[0].powerCfg = commandParam;
+					if(addr==5)
+						inas[0].currentCfg = commandParam;
+					if(addr==6)
+						inas[0].probeDelay = commandParam;									
+				}
+				else
+				{
+					uint8_t data[] = {	addr, 
+										commandParam, 
+										commandParam << 8,
+										commandParam << 16};
+					I2C_write(inas[0].i2cAddr,data,3);
+				}
+				command = 0;
+			}
+		}
+		else
+		{
+			if (toLPC)
+			{
+				if(addr==1)
+					UART_write((uint8_t*)&commandParam,4);
+				if(addr==2)
+					UART_write((uint8_t*)&commandParam,4);
+				if(addr==3)
+					UART_write((uint8_t*)&commandParam,4);
+				if(addr==4)
+					UART_write((uint8_t*)&commandParam,4);
+				if(addr==5)
+					UART_write((uint8_t*)&commandParam,4);
+				if(addr==6)
+					UART_write((uint8_t*)&commandParam,4);																																									
+			}
+			else
+			{
+				commandParam = readReg(addr);
+				UART_write((uint8_t*)&commandParam,4);
+			}
+			command = 0;								
+		}
+	}	
+}
+
+void autosend()
+{
+	continousSend(	0b10010001,
+					&inas[0].probeCnr,
+					&inas[0].probeCount);
+	continousSend(	inas[0].shuntVoltageCfg,
+					&(inas[0].shuntVoltageCnr),
+					&(inas[0].shuntVoltage));
+	continousSend(	inas[0].busVoltageCfg,
+					&(inas[0].busVoltageCnr),
+					&(inas[0].busVoltage));
+	continousSend(	inas[0].powerCfg,
+					&(inas[0].powerCnr),
+					&(inas[0].power));
+	continousSend(	inas[0].currentCfg,
+					&(inas[0].currentCnr),
+					&(inas[0].current));
+}
+
+uint8_t continousProbe(uint8_t cfg,uint32_t *cnr, uint32_t *data,uint8_t reg, uint32_t delay)
+{
+	if (cfg&0b10000000)
+	{			
+		uint64_t counter = TMR32B0TC;
+		if(*cnr>counter)
+			counter += 4294967295-*cnr; //2^32-1, when timer overflow
+		uint64_t diff = counter - *cnr;
+		
+		if(diff>delay)
+		{
+			commandParam = readReg(reg);
+			UART_write((uint8_t*)&commandParam,4);
+			*data = 0;
+			*cnr = TMR32B0TC;
+		}
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t autoprobe()
+{
+	uint8_t res=0;
+	
+	res |=
+	continousProbe(	inas[0].shuntVoltageCfg,
+					&(inas[0].shuntVoltageCnrLp),
+					&(inas[0].shuntVoltage),
+					0x01,
+					inas[0].probeDelay);
+	res |=					
+	continousProbe(	inas[0].busVoltageCfg,
+					&(inas[0].busVoltageCnrLp),
+					&(inas[0].busVoltage),
+					0x02,
+					inas[0].probeDelay);
+	res |=
+	continousProbe(	inas[0].powerCfg,
+					&(inas[0].powerCnrLp),
+					&(inas[0].power),
+					0x03,
+					inas[0].probeDelay);
+	res |=					
+	continousProbe(	inas[0].currentCfg,
+					&(inas[0].currentCnrLp),
+					&(inas[0].current),
+					0x04,
+					inas[0].probeDelay);
+					
+	autosend();
+	
+	return res;
 }
 
 int main(void) {
-	pll_start(0);			// start the PLL
+	pll_start(0);
+	
+	inas[0].i2cAddr = 0x40;
+	inas[0].srpces = 0;	
+	
+	inas[0].shuntVoltageCfg = 0;
+	inas[0].busVoltageCfg = 0;
+	inas[0].powerCfg = 0;
+	inas[0].currentCfg = 0;	
+	
+	inas[0].shuntVoltage = 0;
+	inas[0].busVoltage = 0;
+	inas[0].power = 0;
+	inas[0].current = 0;
+	
+	inas[0].shuntVoltageCnr = 0;
+	inas[0].busVoltageCnr = 0;
+	inas[0].powerCnr = 0;
+	inas[0].currentCnr = 0;
+	
+	inas[0].shuntVoltageCnrLp = 0;
+	inas[0].busVoltageCnrLp = 0;
+	inas[0].powerCnrLp = 0;
+	inas[0].currentCnrLp = 0;	
+	
+	inas[0].probeCount = 0;
+	inas[0].probeCnr = 0;
+	inas[0].probeDelay = 0;
+	
+	GPIO2DIR |= 1<<6; //led
 
-	uint8_t data[] = {'f', '2', 'z','d'};
-
-
-    GPIO2DIR |= 1<<6;  
-    //GPIO2DATA = 1<<6;
-	//UART_init();
-
-	//I2C_init();
-
- 		
-	//timer enable clk
+	//timer enable 
 	SYSAHBCLKCTRL |= (1 << 9);
 	TMR32B0TCR = 1;
-    	
-         	
-         	
-         	int x=0,y=0;
-  /*       	
+
+	I2C_init();
+	UART_init();
+	UART_read(uartRead);
 	
-		data[0] = 0x05;
-		data[1] = 0x44;
-		data[2] = 0x55;
-		I2C_write(0x40,data,3);   
-		
-		data[0] = 0x02;
-		I2C_write(0x40,data,1);   
-	*/
-	while(1) {
-		
-		if (x!=(TMR32B0TC/24000000))
-		{
-			   GPIO2DATA ^= 1<<6;	
-//			dec(y++);
-			x=(TMR32B0TC/24000000);
-		}		
-		
-/*
-		I2C_read(0x40,data,2);		
-		dec((data[1]|data[0]<<8)>>3);
-		
-		UART_read(0);
-*/	
-		
-		
-		
-	//for(int i=0;i<1000000;i++){}
-	//LPC_GPIO2->DATA ^= 1<<6;  
-
-		//data[3] = UART_read(0);
-/*		
-		for(int i=0;i<150000;i++)
-		{
-		data[0] = 0x00;
-		I2C_write(0x40,data,1);
-		I2C_read(0x40,data,2);
-		}
-		GPIO2DATA = 1<<6;
-*/	
-		//dec(data[0]);
-		//dec(data[1]);
-
-//	for(int i=0;1<10000;i++);
-//		LPC_GPIO2->DATA ^= 1<<6;
-		
-
-
+	while(1)
+	{
+		if(!autoprobe())
+			processCommand();
 	}
 
 }

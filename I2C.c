@@ -76,6 +76,11 @@ void I2C_read(uint32_t address, uint8_t *buffer, uint32_t count) {
 	
 }
 
+uint8_t I2C_canRead()
+{
+	return i2c_task.is_busy;
+}
+
 void I2C_Handler(void) {
 	
 	switch(I2C_STATUS) {

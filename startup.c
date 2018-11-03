@@ -4,6 +4,10 @@
 
 #include "LPC1114.h"
 
+#include "I2C.h"
+#include "UART.h"
+#include "SysTick.h"
+
 
 // Sections as defined in the linker script
 extern uint32_t __data_load; 
@@ -16,8 +20,8 @@ extern uint32_t __ram_end;
 // Application entry point main() declaration
 int main(void);
 
-static void __Default_Handler(void) __attribute__ ((interrupt));
-static void __Default_Handler(void)
+void __Default_Handler(void) __attribute__ ((interrupt));
+void __Default_Handler(void)
 {
     while (1);
 }
@@ -25,11 +29,12 @@ static void __Default_Handler(void)
 
 // Interrupt/Exception Handlers
 void Reset_Handler(void);
+/*
 void SysTick_Handler(void) __attribute__((interrupt, weak, alias("__Default_Handler")));
 void I2C_Handler(void) __attribute__ ((weak, alias("__Default_Handler")));
 void UART_Handler(void) __attribute__ ((weak, alias("__Default_Handler")));
 void GPIO1_Handler(void) __attribute__ ((weak, alias("__Default_Handler")));
-
+*/
 // Interrupt Vector at address 0x00000000
 void (* __vectors[]) (void) __attribute__ ((section(".vectors"))) = {
 	(void (*) (void)) &__ram_end,
@@ -78,7 +83,7 @@ void (* __vectors[]) (void) __attribute__ ((section(".vectors"))) = {
 	0,					// IRQ27
 	0,					// IRQ28
 	0,					// IRQ29
-	GPIO1_Handler,		// IRQ30
+	0,//GPIO1_Handler,		// IRQ30
 	0					// IRQ31
 };
 

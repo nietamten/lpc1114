@@ -25,4 +25,6 @@ void wait(uint32_t time);
 //extern void (* volatile Timer_callbacks[])(uint32_t);
 //extern volatile uint32_t Callback_counter;
 
+void SysTick_Handler();
+
 #endif /* SYSTICK_H */

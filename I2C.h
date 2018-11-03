@@ -26,5 +26,8 @@ typedef struct I2CTask {
 void I2C_init(void);
 void I2C_write(uint32_t address, uint8_t *buffer, uint32_t count);
 void I2C_read(uint32_t address, uint8_t *buffer, uint32_t count);
+uint8_t I2C_canRead();
+
+void I2C_Handler(void);
 
 #endif /* I2C_H */

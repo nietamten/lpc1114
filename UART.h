@@ -4,9 +4,11 @@
 #include <stdint.h>
 
 void UART_init(void); 
-void UART_write(uint8_t*, int);
+void UART_write(uint8_t*, uint8_t);
 //uint8_t UART_read(void);
 uint8_t UART_read(void (*)(uint8_t));
+
+void UART_Handler();
 
 #endif /* UART_H */
 
