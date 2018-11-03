@@ -4,6 +4,7 @@
 #include "I2C.h"
 #include "startup.h"
 #include "string.h"
+#include <stdbool.h>
 
 #define FREQ 24000000
 
@@ -67,7 +68,11 @@ volatile uint32_t commandParam = 0;
 
 uint8_t lastReg = 254;
 
-uint16_t readReg(uint8_t reg)
+void waitFunction()
+{
+}
+
+uint16_t readReg(uint8_t reg, bool waitF)
 {
 	if(lastReg != reg)
 	{
@@ -75,7 +80,10 @@ uint16_t readReg(uint8_t reg)
 		lastReg = reg;
 	}
 	uint8_t data[] = {0,0};
-	I2C_read(0x40,data,2);
+	if(waitF)
+		I2C_read(0x40,data,2,waitFunction);
+	else
+		I2C_read(0x40,data,2,0);
 	return *((uint16_t*)data);
 }
 
@@ -181,7 +189,7 @@ void processCommand()
 			}
 			else
 			{
-				commandParam = readReg(addr);
+				commandParam = readReg(addr,false);
 				UART_write((uint8_t*)&commandParam,4);
 			}
 			command = 0;								
@@ -219,7 +227,7 @@ uint8_t continousProbe(uint8_t cfg,uint32_t *cnr, uint32_t *data,uint8_t reg, ui
 		
 		if(diff>delay)
 		{
-			commandParam = readReg(reg);
+			commandParam = readReg(reg,1);
 			UART_write((uint8_t*)&commandParam,4);
 			*data = 0;
 			*cnr = TMR32B0TC;
@@ -263,9 +271,8 @@ uint8_t autoprobe()
 	return res;
 }
 
-int main(void) {
-	pll_start(0);
-	
+void addIna()
+{
 	inas[0].i2cAddr = 0x40;
 	inas[0].srpces = 0;	
 	
@@ -292,6 +299,12 @@ int main(void) {
 	inas[0].probeCount = 0;
 	inas[0].probeCnr = 0;
 	inas[0].probeDelay = 0;
+}
+
+int main(void) {
+	pll_start(0);
+	
+	addIna();
 	
 	GPIO2DIR |= 1<<6; //led
 
@@ -305,8 +318,12 @@ int main(void) {
 	
 	while(1)
 	{
-		if(!autoprobe())
-			processCommand();
+	uint8_t d;
+
+		d='0';
+		UART_write(&d,1);
+		//if(!autoprobe())
+		//	processCommand();
 	}
 
 }

@@ -55,10 +55,12 @@ void I2C_write(uint32_t address, uint8_t *buffer, uint32_t count) {
 	
 }
 
-void I2C_read(uint32_t address, uint8_t *buffer, uint32_t count) {
+void I2C_read(uint32_t address, uint8_t *buffer, uint32_t count, void (*waitF)()) {
 
 	// Wait until I2C is free (NOT busy)
-	while(i2c_task.is_busy);
+	while(i2c_task.is_busy)
+		if(waitF)
+			waitF();
 
 	// Initialize task object for reading
 	i2c_task.address = address;
@@ -72,7 +74,9 @@ void I2C_read(uint32_t address, uint8_t *buffer, uint32_t count) {
 	I2C_CTRL_SET = (1 << I2C_CTRL_STA_BIT);
 	
 	// Wait until all expected bytes are received in the buffer
-	while(i2c_task.is_busy);
+	while(i2c_task.is_busy)
+		if(waitF)
+			waitF();
 	
 }
 
