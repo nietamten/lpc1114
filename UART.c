@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "LPC1114.h"
 #include "UART.h"
+#include "string.h"
 
 
 void (*UART_callback)(uint8_t);
@@ -21,9 +22,13 @@ void UART_init(void) {
 	UART_LCR = (UART_LCR_WORDLENGTH_08 << UART_LCR_WORDLENGTH_BIT) | (1 << UART_LCR_DLAB_BIT);
 	
 	// Set baud rate to 115200 kb/s @ UART_CLK of 12Mhz  (DLM = 0, DLL = 4, DIVADDVAL = 5, and MULVAL = 8)
-	UART_DLM = 0x00;		// Default
-	UART_DLL = 0x04;
-	UART_FDR = 0x85;		// FDR = (MULVAL << 4 ) | DIVADDVAL
+	//UART_DLM = 0x00;		// Default
+	//UART_DLL = 0x04;
+	//UART_FDR = 0x85;		// FDR = (MULVAL << 4 ) | DIVADDVAL
+
+	//UART_DLM = 0x00;		// Default
+	//UART_DLL = 0x04;
+	//UART_FDR = 1<<4;		
 	
 	// Set baud rate to 115200 kb/s @ UART_CLK of 48Mhz  (DLM = 0, DLL = 17, DIVADDVAL = 8, and MULVAL = 15)
 	// UART_DLM = 0x00;		// Default
@@ -103,6 +108,59 @@ void UART_Handler(void) {
 	//UART_IER ^= (1 << UART_IER_RDA_BIT);
 }
 
+void UART_BaseXWrite(uint64_t n,uint8_t base, bool nl)
+{
+	uint8_t d;
+	
+	if(n==0)
+	{
+		d='0';
+		UART_write(&d,1);
+	}
+	uint8_t bufflen = 20;
+	uint8_t num[bufflen];
+	memset(num,0,bufflen);
+	uint8_t i = 0;
+	while(n != 0)
+	{
+		num[i++]=(n%base)+1;
+		n=n/base;
+	}
+	for(i=14;i<15;i--)
+	{
+		d=num[i];
+		if(d!=0)
+		{
+			if(d<11)
+				d+='0'-1;
+			else
+				d='A'+d-11;
+			UART_write(&d,1);	
+		}
+	}
+	if(nl)
+	{
+		d='\r';
+		UART_write(&d,1);
+		d='\n';
+		UART_write(&d,1);	
+	}
+}
+/*
+uint64_t UART_BaseXRead(uint8_t *c, uint8_t base)
+{
+	uint64_t res = 0;
+	uint8_t i = 0;
+	bool finish = false;
+	while(!finish)
+	{
+		uint8_t ci = c[i++];
+		if(toupper(ci) < 10)
+		{
+		}
+	}
+}
+*/
 /* 
 uint8_t UART_read(void) {
 	

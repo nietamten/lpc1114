@@ -2,111 +2,56 @@
 #include <stdint.h>
 #include "LPC1114.h"
 #include "I2C.h"
+#include "UART.h"
+#include "INA219.h"
 #include "startup.h"
-#include "string.h"
+
 #include <stdbool.h>
+
+#include <string.h>
+#include <stdlib.h>
 
 #define FREQ 24000000
 
 
-uint8_t autosendEn = 0;
-volatile uint8_t command = 0;
-volatile uint8_t commandCount = 0;
-volatile uint32_t commandParam = 0;
-
-uint8_t lastReg = 254;
-
-uint16_t readReg(uint8_t reg, bool waitF)
-{
-	if(lastReg != reg)
-	{
-		I2C_write(0x40,&reg,1);
-		lastReg = reg;
-	}
-	uint8_t data[] = {0,0};
-	if(waitF)
-		I2C_read(0x40,data,2,0);
-	else
-		I2C_read(0x40,data,2,0);
-	return *((uint16_t*)data);
-}
-
-
+enum rState {rsNotStarted,rsNoRW,rsStarted,rsEnded};
+#define BUF_SIZE 15
+uint8_t cb[BUF_SIZE];
+uint8_t ci = 0;
+volatile enum rState state = rsNotStarted;
 void uartRead(uint8_t c)
 {
-	if(command == 0)
+	if(state == rsNotStarted && c == '|')
 	{
-		if((c&0x80) != 0) //not ascii (they must be used for autobaud)
-		{
-			command = c;
-			commandParam = 0;
-			commandCount = 0;
-		}
+		state = rsNoRW;
+		ci = 0;
 	}
-	else
+	else if(state == rsNoRW)
 	{
-		if (commandCount < 4)
+		if(c == 'R' || c == 'W')
 		{
-			commandParam |= c << (commandCount*8);
-			commandCount++;
-		}		
-	}
-}
-
-void processCommand()
-{
-	if(command != 0)
-	{
-		uint8_t rw = ((command&0b00000100) != 0);
-		uint8_t addr = (command&0b00111000) >> 3;
-		uint8_t toLPC = ((command&0b01000000) != 0);
-		
-		if (rw)
-		{
-			if (commandCount >3)
-			{GPIO2DATA = 1<<6;
-				/*if (toLPC)
-				{
-					if(addr==0)
-						autosendEn = commandParam;
-				}
-				else
-				{
-					uint8_t data[] = {	addr, 
-										commandParam, 
-										commandParam << 8,
-										commandParam << 16};
-					I2C_write(0x40,data,3);
-				}*/
-				command = 0;
-			}
+			cb[ci++] = c;
+			state = rsStarted;
 		}
-		/*
 		else
 		{
-			if (toLPC)
-			{
-																																				
-			}
-			else
-			{
-				commandParam = readReg(addr,false);
-				UART_write((uint8_t*)&commandParam,4);
-			}
-			command = 0;								
+			state = rsNotStarted;
+			ci = 0;
 		}
-		*/
-	}	
-}
-
-void autosend()
-{
-	if(autosendEn)
+	}
+	else if(state == rsStarted)
 	{
-		for(uint8_t i=0;i<4;i++)
+		if(c == '|')
 		{
-			uint32_t data = readReg(i+1,false);
-			UART_write((uint8_t*)&data,4);
+			state = rsEnded;
+		}
+		else if(ci<BUF_SIZE-1)
+		{
+			cb[ci++] = c;
+		}
+		else
+		{
+			state = rsEnded;
 		}
 	}
 }
@@ -122,15 +67,38 @@ int main(void) {
 
 	I2C_init();
 	UART_init();
+	uint8_t a[] = {'a','e','i','o','u', '\n'};
+	UART_write(&a,6);
+
 	UART_read(uartRead);
 	
 	while(1)
 	{
-	//	uartRead(UART_read(0));
-		processCommand();
-		//autosend();
+		if(state == rsEnded)
+		{			
+			for(uint8_t i=ci;i<BUF_SIZE;i++)
+				cb[i] = 0;
+			
+			uint32_t param = strtol(&(cb[1]),NULL,0);
+			
+			if(cb[0] == 'R')
+			{
+				UART_BaseXWrite(INA_readReg(param),16,true);
+			}
+			else
+			{
+				uint8_t reg = param>>16;
+				uint16_t val = param&0xffff;
+				//UART_BaseXWrite(val,16,true);
+				INA_writeReg(reg,val);
+			}			
+			state = rsNotStarted;
+		}
 		
+		if(state == rsNotStarted)
+			GPIO2DATA = 1<<6;
+		else
+			GPIO2DATA = 0;		
 	}
-
 }
 
