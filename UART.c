@@ -21,9 +21,9 @@ void UART_init(void) {
 	UART_LCR = (UART_LCR_WORDLENGTH_08 << UART_LCR_WORDLENGTH_BIT) | (1 << UART_LCR_DLAB_BIT);
 	
 	// Set baud rate to 115200 kb/s @ UART_CLK of 12Mhz  (DLM = 0, DLL = 4, DIVADDVAL = 5, and MULVAL = 8)
-	// UART_DLM = 0x00;		// Default
-	//UART_DLL = 0x04;
-	//UART_FDR = 0x85;		// FDR = (MULVAL << 4 ) | DIVADDVAL
+	UART_DLM = 0x00;		// Default
+	UART_DLL = 0x04;
+	UART_FDR = 0x85;		// FDR = (MULVAL << 4 ) | DIVADDVAL
 	
 	// Set baud rate to 115200 kb/s @ UART_CLK of 48Mhz  (DLM = 0, DLL = 17, DIVADDVAL = 8, and MULVAL = 15)
 	// UART_DLM = 0x00;		// Default
@@ -38,10 +38,7 @@ void UART_init(void) {
 	
 	//Autodetect baud rate 	
 	UART_ACR |= 0x01;
-	if (UART_ACR & 0x01)
-	{
-		while(UART_ACR & 0x01);
-	}		
+	while(UART_ACR & 0x01);
 	
 	// Enable UART Interrupt (NVIC_SETENA is a set only register. No need for a RMW operation)
 	NVIC_SETENA = (1 << NVIC_UART_BIT);
@@ -94,7 +91,10 @@ void UART_Handler(void) {
 		
 			// Call UART read callback function if not NULL
 			if (UART_callback)
-				UART_callback(UART_RBR);
+			{
+				while( (UART_LSR & (1 << UART_LSR_RDA_BIT)) != 0)
+					UART_callback(UART_RBR);
+			}
 			
 			break;
 	}
@@ -117,3 +117,15 @@ uint8_t UART_read(void) {
 // Note: How to check if interrupt is happening
 	// Wait for interrupt to happen
 	//while( (UART_IIR & (1 << UART_IIR_INT_BIT)) == 1 );
+	
+	//working tty linux configuration for binary transmission
+//-ixon -ixoff #software flow control (special characters)
+//-isig #special characters
+//-icrnl #translate cr to nl
+//-iuclc #translate to lowercase
+//-ixany #restarting ?
+//-imaxbel  #beep
+//-iutf8
+// -icanon #special characters
+// -iexten #special characters
+// -echo #...
