@@ -16,12 +16,12 @@ void I2C_init(void) {
 	PRESETCTRL |= (1 << PRESETCTRL_I2C_BIT);
 	
 	// Set I2C Clock Rate (100KHz, CYCLE_H + CYCLE_L = 120, @12MHz system clock )
-	//I2C_CLK_H = 0x3C;
-	//I2C_CLK_L = 0x3C;
+	I2C_CLK_H = 0x5C;
+	I2C_CLK_L = 0x5C;
 	
 	// Set I2C Clock Rate (100KHz, CYCLE_H + CYCLE_L = 480, @48MHz system clock )
-	I2C_CLK_H = 0x08;
-	I2C_CLK_L = 0x08;
+	//I2C_CLK_H = 0x08;
+	//I2C_CLK_L = 0x08;
 		
 	// Enable I2C Interface (I2EN=1, SDA and SCL inputs are not ignored any more; )
 	I2C_CTRL_SET = (1 << I2C_CTRL_I2EN_BIT);

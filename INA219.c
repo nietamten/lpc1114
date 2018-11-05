@@ -20,7 +20,7 @@ void INA_writeReg(uint8_t reg, uint16_t value)
 {
 	uint8_t data[3];
 	data[0] = reg;
-	data[1] = value;
-	data[2] = value<<8;
+	*((uint16_t*)(&data[1])) = 0xfff0;
+	
 	I2C_write(0x40,data,3); 
 }

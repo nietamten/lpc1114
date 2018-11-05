@@ -66,14 +66,22 @@ int main(void) {
 	TMR32B0TCR = 1;
 
 	I2C_init();
-	UART_init();
-	uint8_t a[] = {'a','e','i','o','u', '\n'};
-	UART_write(&a,6);
-
-	UART_read(uartRead);
-	
-	while(1)
+	if(1)
 	{
+		UART_init();
+		uint8_t a[] = {'a','e','i','o','u', '\n'};
+		UART_write(&a,6);
+
+		UART_read(uartRead);
+	}
+	uint8_t data[3];
+	data[0] = 0x05;;
+	data[1] = 0xFF;
+	data[2] = 0xFF;
+	I2C_write(0x40,data,3); 
+
+	while(1)
+	{/*
 		if(state == rsEnded)
 		{			
 			for(uint8_t i=ci;i<BUF_SIZE;i++)
@@ -89,6 +97,7 @@ int main(void) {
 			{
 				uint8_t reg = param>>16;
 				uint16_t val = param&0xffff;
+				//UART_BaseXWrite(reg,16,true);
 				//UART_BaseXWrite(val,16,true);
 				INA_writeReg(reg,val);
 			}			
@@ -96,9 +105,12 @@ int main(void) {
 		}
 		
 		if(state == rsNotStarted)
+		
 			GPIO2DATA = 1<<6;
 		else
 			GPIO2DATA = 0;		
+		*/	
+		UART_BaseXWrite(INA_readReg(0x05),16,true);
 	}
 }
 
