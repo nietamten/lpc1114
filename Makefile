@@ -82,7 +82,7 @@ disasm: $(TARGET).lss
 $(TARGET).lss: $(TARGET).elf
 	$(OBJDUMP) -h -S $< > $@
 
-program: $(TARGET).elf
+program: $(TARGET).bin
 	lpc21isp -control -bin main.bin /dev/ttyUSB0 115200 14746
 #	$(PGM) -f interface/stlink-v1.cfg -f lpc1114.cfg -c "program $(TARGET).elf verify reset"
 
