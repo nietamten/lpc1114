@@ -8,7 +8,7 @@ TARGET			= main
 #SOURCE			= startup.c test_SYSPLL.c UART.c SysTick.c lcd.c I2C.c SYSPLL.c
 #SOURCE			= startup.c IR.c  UART.c SysTick.c 
 #SOURCE			= startup.c test_Stepper.c UART.c SysTick.c lcd.c I2C.c 
-SOURCE			= startup.c test_UART_TX.c UART.c SysTick.c  I2C.c 
+SOURCE			= startup.c test_UART_TX.c UART.c SysTick.c  I2C.c INA219.c 
 SOURCE_ASM = libaeabi-cortexm0/crt.S libaeabi-cortexm0/idivmod.S \
 	libaeabi-cortexm0/ldivmod.S libaeabi-cortexm0/llsr.S \
 	libaeabi-cortexm0/memset.S libaeabi-cortexm0/modsi3.S libaeabi-cortexm0/ulcmp.S \
