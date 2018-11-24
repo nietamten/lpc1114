@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void UART_init(void); 
+void UART_init(bool autobaud); 
 void UART_write(uint8_t*, uint8_t);
 //uint8_t UART_read(void);
 uint8_t UART_read(void (*)(uint8_t));

@@ -119,7 +119,7 @@ void Reset_Handler(void) {
 void pll_start(uint8_t rc)
 {
 	if (rc)
-	{
+	{//RC 24Mhz
 		SYSPLLCTRL = 0x01|0x02<<6;
 		
 		// Power-up PLL block
@@ -134,8 +134,7 @@ void pll_start(uint8_t rc)
 		MAINCLKUEN = MAINCLKUEN_ON;
 	}
 	else
-	{
-		
+	{// '12Mhz crystal' -> 24Mhz clock
 		SYSOSCCTRL = 0;			// "lower speed" crystals
 		PDCONFIG &= ~(1<<5);	// power-up main oscillator 
 		SYSPLLCLKSEL = 1;	// select main oscillator as the input clock for PLL

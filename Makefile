@@ -8,7 +8,17 @@ TARGET			= main
 #SOURCE			= startup.c test_SYSPLL.c UART.c SysTick.c lcd.c I2C.c SYSPLL.c
 #SOURCE			= startup.c IR.c  UART.c SysTick.c 
 #SOURCE			= startup.c test_Stepper.c UART.c SysTick.c lcd.c I2C.c 
-SOURCE			= startup.c test_UART_TX.c UART.c SysTick.c  I2C.c INA219.c
+SOURCE			= startup.c test_UART_TX.c UART.c SysTick.c  I2C.c 
+SOURCE_ASM = libaeabi-cortexm0/crt.S libaeabi-cortexm0/idivmod.S \
+	libaeabi-cortexm0/ldivmod.S libaeabi-cortexm0/llsr.S \
+	libaeabi-cortexm0/memset.S libaeabi-cortexm0/modsi3.S libaeabi-cortexm0/ulcmp.S \
+	libaeabi-cortexm0/umodsi3.S libaeabi-cortexm0/uread8.S libaeabi-cortexm0/uwrite8.S \
+	libaeabi-cortexm0/divdi3.S libaeabi-cortexm0/idiv.S libaeabi-cortexm0/lcmp.S \
+	libaeabi-cortexm0/llsl.S libaeabi-cortexm0/lmul.S  libaeabi-cortexm0/memmove.S \
+	libaeabi-cortexm0/moddi3.S libaeabi-cortexm0/umoddi3.S libaeabi-cortexm0/uread4.S \
+	libaeabi-cortexm0/uwrite4.S
+#libaeabi-cortexm0/lasr.S 
+	
 #SOURCE			= startup.c main.c lcd.c SysTick.c I2C.c 
 
 # Processor/Microcontroller family
@@ -48,29 +58,49 @@ LDFLAGS=-Wl,--gc-sections # 			Linker to ignore sections that aren't used.
 LDFLAGS+= -Wl,-Map,$(TARGET).map #		Generate memory map file
 LDFLAGS+= -Wl,-T,"$(TARGET).ld" # 	Path to Linker Script
 #LDFLAGS+= -Wl,--build-id=none #			Do NOT require a .note.gnu.build-id section (as of GCC 4.9)
-#LDFLAGS+= -nostdlib
+LDFLAGS+= -nostdlib
 LDFLAGS+= -nostartfiles
 LDFLAGS+= -g
 LDFLAGS+= -mcpu=cortex-m0 
 LDFLAGS+= -mthumb 
+
+CFLAGS+= -Llibaeabi-cortexm0
+
+#LDFLAGS+= -L.
+#LDFLAGS+= -laeabi-cortexm0
+
+#LDFLAGS+= -fPIC
+#CFLAGS+=  -fpic 
+#LDFLAGS+= -Wl,-Bstatic
+
+
 # Define object and assembly list files
 OBJ = $(SOURCE:%.c=%.o)
+OBJ_ASM = $(SOURCE_ASM:%.S=%.o)
 LST = $(SOURCE:%.c=%.lst)
+
+
+#TST = $(SOURCE_ASM:%.S=%.o)
+#$(warning TST is $(TST)) 
 
 .PHONY: all clean bin disasm program
 
 all: $(TARGET).elf
 
-$(TARGET).elf: $(OBJ)
-	$(CC) $(LDFLAGS) -o $@ $(OBJ)
+$(TARGET).elf: $(OBJ) $(OBJ_ASM)
+	$(CC) $(LDFLAGS) -o $@ $(OBJ)  $(OBJ_ASM)
 	$(SIZE) -x -A $(TARGET).elf | grep -E -i "section|vectors|text|bss|data"
 
-%.o: %.c
+%.o: %.c 
 	$(CC) $(CFLAGS) -c -o $@ $<
+#	$(MAKE) -C libaeabi-cortexm0
 	
 clean:
+#	$(MAKE) -C libaeabi-cortexm0 clean
 	$(RM) $(OBJ)
+	$(RM) $(OBJ_ASM)
 	$(RM) $(TARGET).bin $(TARGET).hex $(TARGET).elf $(TARGET).map $(TARGET).lss $(LST)
+
 	
 bin: $(TARGET).bin
 
