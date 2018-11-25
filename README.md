@@ -1,3 +1,3 @@
 # lpc1114
-Only playground for my lpc1114 with 12MHz crystal soldere.
+Only playground for my lpc1114 with 12MHz crystal soldered.
 Some things here may not make sense... 
