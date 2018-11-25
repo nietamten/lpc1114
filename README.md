@@ -1,0 +1,3 @@
+# lpc1114
+Only playground for my lpc1114 with 12MHz crystal soldere.
+Some things here may not make sense... 
