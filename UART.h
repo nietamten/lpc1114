@@ -13,6 +13,8 @@ void UART_Handler();
 
 void UART_BaseXWrite(uint64_t n,uint8_t base, bool nl);
 
+uint32_t UART_Read16(char *str);
+
 #endif /* UART_H */
 
 

@@ -64,7 +64,7 @@ LDFLAGS+= -g
 LDFLAGS+= -mcpu=cortex-m0 
 LDFLAGS+= -mthumb 
 
-CFLAGS+= -Llibaeabi-cortexm0
+#CFLAGS+= -Llibaeabi-cortexm0
 
 #LDFLAGS+= -L.
 #LDFLAGS+= -laeabi-cortexm0
@@ -80,7 +80,7 @@ OBJ_ASM = $(SOURCE_ASM:%.S=%.o)
 LST = $(SOURCE:%.c=%.lst)
 
 
-#TST = $(SOURCE_ASM:%.S=%.o)
+#TST = %.o
 #$(warning TST is $(TST)) 
 
 .PHONY: all clean bin disasm program
@@ -93,10 +93,11 @@ $(TARGET).elf: $(OBJ) $(OBJ_ASM)
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -c -o $@ $<
-#	$(MAKE) -C libaeabi-cortexm0
+
+%.o: %.S 
+	$(CC) -c -o $@ $<
 	
 clean:
-#	$(MAKE) -C libaeabi-cortexm0 clean
 	$(RM) $(OBJ)
 	$(RM) $(OBJ_ASM)
 	$(RM) $(TARGET).bin $(TARGET).hex $(TARGET).elf $(TARGET).map $(TARGET).lss $(LST)
@@ -135,4 +136,5 @@ program: $(TARGET).bin
 #	[How to view the symbol table]
 #	arm-none-eabi-objdump -t hello_world.elf
 #	arm-none-eabi-nm -n hello_world.elf
+
 
